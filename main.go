@@ -2,17 +2,16 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/phetployst/book-store-api/config"
+	"github.com/phetployst/book-store-api/router"
 )
 
 func main() {
 	e := echo.New()
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
+
+	router.RegisterRoutes(e)
 
 	osGetter := &config.OsEnvGetter{}
 
