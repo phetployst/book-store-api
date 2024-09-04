@@ -1,7 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/phetployst/book-store-api/book"
@@ -26,8 +31,21 @@ func main() {
 
 	db.AutoMigrate(&book.Book{})
 	router.RegisterRoutes(e, db)
-
 	address := fmt.Sprintf("%s:%d", config.Server.Hostname, config.Server.Port)
 
-	e.Logger.Fatal(e.Start(address))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	go func() {
+		if err := e.Start(address); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatal(err)
+		}
+	}()
+
+	<-ctx.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
 }
