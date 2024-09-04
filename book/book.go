@@ -6,6 +6,8 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/labstack/echo/v4"
+	"github.com/phetployst/book-store-api/middleware"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -48,19 +50,24 @@ func (handler *handler) Create(c echo.Context) error {
 	validator.RegisterValidation("isbn", validateISBN)
 
 	c.Echo().Validator = &CustomValidator{validator: validator}
+	logger := middleware.GetLogger(c)
 
 	if err := c.Bind(&book); err != nil {
+		logger.Error("failed to bind book", zap.Error(err))
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": err.Error()})
 	}
 
 	if err := c.Validate(book); err != nil {
+		logger.Error("failed to validate book", zap.Error(err))
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
 	if result := handler.db.Create(&book); result.Error != nil {
+		logger.Error("failed to insert book", zap.Error(result.Error))
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": result.Error.Error()})
 	}
 
+	logger.Info("book created", zap.Any("book", book))
 	return c.JSON(http.StatusCreated, book)
 
 }
