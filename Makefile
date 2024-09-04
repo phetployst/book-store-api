@@ -1,3 +1,8 @@
+.PHONY: setup-pre-commit
+setup-pre-commit:
+	@echo "Setting up pre-commit..."
+	@./scripts/setup-pre-commit.sh
+
 .PHONY: setup-local-db
 setup-local-db:
 	@echo "Starting local database..."
