@@ -37,6 +37,7 @@ func TestRegisterRoutes(t *testing.T) {
 	want := []Route{
 		{"/", http.MethodGet},
 		{"/books", http.MethodPost},
+		{"/books", http.MethodGet},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v routes but want %v routes", got, want)
