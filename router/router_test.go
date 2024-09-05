@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/labstack/echo/v4"
@@ -39,6 +40,14 @@ func TestRegisterRoutes(t *testing.T) {
 		{"/books", http.MethodPost},
 		{"/books", http.MethodGet},
 	}
+
+	sort.Slice(got, func(i, j int) bool {
+		return got[i].Path < got[j].Path || (got[i].Path == got[j].Path && got[i].Method < got[j].Method)
+	})
+	sort.Slice(want, func(i, j int) bool {
+		return want[i].Path < want[j].Path || (want[i].Path == want[j].Path && want[i].Method < want[j].Method)
+	})
+
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v routes but want %v routes", got, want)
 	}
