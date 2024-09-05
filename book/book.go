@@ -71,3 +71,13 @@ func (handler *handler) Create(c echo.Context) error {
 	return c.JSON(http.StatusCreated, book)
 
 }
+
+func (handler *handler) GetAll(c echo.Context) error {
+	var books []Book
+	if result := handler.db.Find(&books); result.Error != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": result.Error.Error()})
+	}
+
+	return c.JSON(http.StatusOK, books)
+
+}

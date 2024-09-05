@@ -14,7 +14,10 @@ import (
 	"gorm.io/gorm"
 )
 
-const createBookQuery = `INSERT INTO "books" ("created_at","updated_at","deleted_at","title","author","isbn") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id"`
+const (
+	createBookQuery = `INSERT INTO "books" ("created_at","updated_at","deleted_at","title","author","isbn") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id"`
+	getAllBookQuery = `SELECT * FROM "books" WHERE "books"."deleted_at" IS NULL`
+)
 
 func TestCreateBook(t *testing.T) {
 	t.Run("create book given valid book", func(t *testing.T) {
@@ -125,4 +128,51 @@ func TestCreateBook(t *testing.T) {
 
 	})
 
+}
+
+func TestGetAllBook(t *testing.T) {
+	t.Run("get all books given books exist in the database", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		rows := sqlmock.NewRows([]string{"ID", "CreatedAt", "UpdatedAt", "DeletedAt", "title", "author", "isbn"}).
+			AddRow(1, nil, nil, nil, "Four Thousand Weeks", "Oliver Burkeman", "9781785038723").
+			AddRow(2, nil, nil, nil, "Atomic Habits", "James Clear", "9781847941831").
+			AddRow(3, nil, nil, nil, "The Tree of a Thousand Loves", "Sukanya Kittikhun", "9786164453819")
+		mock.ExpectQuery(getAllBookQuery).WillReturnRows(rows)
+
+		handler := NewHandler(gormDB)
+		err := handler.GetAll(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, response.Code)
+	})
+
+	t.Run("get all books given error during query", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		mock.ExpectQuery(getAllBookQuery).WillReturnError(errors.New("query error"))
+		handler := NewHandler(gormDB)
+		err := handler.GetAll(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, response.Code)
+	})
 }
