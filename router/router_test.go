@@ -36,7 +36,6 @@ func TestRegisterRoutes(t *testing.T) {
 	}
 
 	want := []Route{
-		{"/", http.MethodGet},
 		{"/books", http.MethodPost},
 		{"/books", http.MethodGet},
 	}
