@@ -32,7 +32,9 @@ func main() {
 	configProvider := config.ConfigProvider{Getter: osGetter}
 	config := configProvider.GetConfig()
 
-	db, err := gorm.Open(postgres.Open(config.Server.DBConnectionString), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(config.Server.DBConnectionString), &gorm.Config{
+		Logger: middleware.CreateGormLogger(),
+	})
 	if err != nil {
 		logger.Fatal("failed to open database connection", zap.Error(err))
 		panic("failed to connect to database")

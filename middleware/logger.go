@@ -1,9 +1,14 @@
 package middleware
 
 import (
+	"log"
+	"os"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
+	"gorm.io/gorm/logger"
 )
 
 const (
@@ -11,6 +16,19 @@ const (
 	parentIDLogField = "parent-id"
 	spanIDLogField   = "span-id"
 )
+
+func CreateGormLogger() logger.Interface {
+	return logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             time.Second,
+			LogLevel:                  logger.Info,
+			IgnoreRecordNotFoundError: true,
+			ParameterizedQueries:      true,
+			Colorful:                  true,
+		},
+	)
+}
 
 func GetLogger(c echo.Context) *zap.Logger {
 	switch logger := c.Get(loggerContextKey).(type) {
@@ -23,11 +41,11 @@ func GetLogger(c echo.Context) *zap.Logger {
 
 func LogMiddleware(logger *zap.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return log(next, logger)
+		return setRequestLogger(next, logger)
 	}
 }
 
-func log(next echo.HandlerFunc, logger *zap.Logger) func(c echo.Context) error {
+func setRequestLogger(next echo.HandlerFunc, logger *zap.Logger) func(c echo.Context) error {
 	return func(c echo.Context) error {
 		c.Set(loggerContextKey, loggerWithParentAndSpanID(c, logger))
 		return next(c)

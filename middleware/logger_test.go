@@ -22,7 +22,7 @@ func TestLogMiddleware(t *testing.T) {
 		response := httptest.NewRecorder()
 		c := e.NewContext(request, response)
 		handler := logHelloWorldHandler()
-		err := log(handler, logger)(c)
+		err := setRequestLogger(handler, logger)(c)
 
 		assert.NoError(t, err)
 		assertLoggerInContext(t, c)
@@ -42,7 +42,7 @@ func TestLogMiddleware(t *testing.T) {
 		c := e.NewContext(request, response)
 		c.Request().Header.Set("X-Request-ID", "request-id")
 		handler := logHelloWorldHandler()
-		err := log(handler, logger)(c)
+		err := setRequestLogger(handler, logger)(c)
 
 		assert.NoError(t, err)
 		assertLoggerInContext(t, c)
