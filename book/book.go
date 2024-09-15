@@ -1,6 +1,7 @@
 package book
 
 import (
+	"errors"
 	"net/http"
 	"regexp"
 
@@ -80,4 +81,23 @@ func (handler *handler) GetAll(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, books)
 
+}
+
+func (handler *handler) GetById(c echo.Context) error {
+	book := Book{}
+	id := c.Param("id")
+
+	result := handler.db.First(&book, id)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return c.JSON(http.StatusNotFound, map[string]string{
+				"error": "Book not found",
+			})
+		}
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": result.Error.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, book)
 }

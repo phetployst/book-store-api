@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	createBookQuery = `INSERT INTO "books" ("created_at","updated_at","deleted_at","title","author","isbn") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id"`
-	getAllBookQuery = `SELECT * FROM "books" WHERE "books"."deleted_at" IS NULL`
+	createBookQuery  = `INSERT INTO "books" ("created_at","updated_at","deleted_at","title","author","isbn") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id"`
+	getAllBookQuery  = `SELECT * FROM "books" WHERE "books"."deleted_at" IS NULL`
+	getBookByIdQuery = `SELECT * FROM "books" WHERE "books"."id" = $1 AND "books"."deleted_at" IS NULL ORDER BY "books"."id" LIMIT $2`
 )
 
 func TestCreateBook(t *testing.T) {
@@ -175,4 +176,82 @@ func TestGetAllBook(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, response.Code)
 	})
+}
+
+func TestGetBookById(t *testing.T) {
+
+	t.Run("get book by id given a book exists in the database", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("3")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		row := sqlmock.NewRows([]string{"ID", "CreatedAt", "UpdatedAt", "DeletedAt", "title", "author", "isbn"})
+		row.AddRow(3, nil, nil, nil, "The Tree of a Thousand Loves", "Sukanya Kittikhun", "9786164453819")
+		mock.ExpectQuery(getBookByIdQuery).WithArgs("3", 1).WillReturnRows(row)
+
+		handler := NewHandler(gormDB)
+		err := handler.GetById(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, response.Code)
+	})
+
+	t.Run("get user by id given user does not exist", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("1")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		mock.ExpectQuery(getBookByIdQuery).WithArgs("1", 1).WillReturnError(gorm.ErrRecordNotFound)
+
+		handler := NewHandler(gormDB)
+		err := handler.GetById(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, response.Code)
+	})
+
+	t.Run("get user by id given error during query", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("1")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		mock.ExpectQuery(getBookByIdQuery).WithArgs("1", 1).WillReturnError(errors.New("query error"))
+
+		handler := NewHandler(gormDB)
+		err := handler.GetById(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, response.Code)
+	})
+
 }
