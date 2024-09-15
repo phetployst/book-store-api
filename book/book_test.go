@@ -19,6 +19,7 @@ const (
 	getAllBookQuery  = `SELECT * FROM "books" WHERE "books"."deleted_at" IS NULL`
 	getBookByIdQuery = `SELECT * FROM "books" WHERE "books"."id" = $1 AND "books"."deleted_at" IS NULL ORDER BY "books"."id" LIMIT $2`
 	updateBookQuery  = `UPDATE "books" SET "created_at"=$1,"updated_at"=$2,"deleted_at"=$3,"title"=$4,"author"=$5,"isbn"=$6 WHERE "books"."deleted_at" IS NULL AND "id" = $7`
+	deleteBookQuery  = `UPDATE "books" SET "deleted_at"=$1 WHERE "books"."id" = $2 AND "books"."deleted_at" IS NULL`
 )
 
 func TestCreateBook(t *testing.T) {
@@ -390,5 +391,80 @@ func TestUpdateBook(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, response.Code)
 	})
+}
 
+func TestDeleteBook(t *testing.T) {
+	t.Run("delete book given a book exists in the database", func(t *testing.T) {
+		e := echo.New()
+		request := httptest.NewRequest(http.MethodDelete, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("3")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		mock.ExpectBegin()
+		mock.ExpectExec(deleteBookQuery).WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectCommit()
+
+		handler := NewHandler(gormDB)
+		err := handler.Delete(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, response.Code)
+		assert.JSONEq(t, `{"message":"Book successfully deleted"}`, response.Body.String())
+	})
+
+	t.Run("delete book given error during query execution", func(t *testing.T) {
+		e := echo.New()
+		request := httptest.NewRequest(http.MethodDelete, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("3")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		mock.ExpectQuery(deleteBookQuery).WillReturnError(errors.New("Internal server error"))
+
+		handler := NewHandler(gormDB)
+		err := handler.Delete(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, response.Code)
+	})
+
+	t.Run("return not found when no rows affected", func(t *testing.T) {
+		e := echo.New()
+		request := httptest.NewRequest(http.MethodDelete, "/", nil)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("38")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		mock.ExpectBegin()
+		mock.ExpectExec(deleteBookQuery).WillReturnResult(sqlmock.NewResult(0, 0))
+		mock.ExpectCommit()
+
+		handler := NewHandler(gormDB)
+		err := handler.Delete(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, response.Code)
+	})
 }

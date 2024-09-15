@@ -135,3 +135,20 @@ func (handler *handler) Update(c echo.Context) error {
 	logger.Info("book updated successfully", zap.Any("book", book))
 	return c.JSON(http.StatusOK, book)
 }
+
+func (handler *handler) Delete(c echo.Context) error {
+	book := Book{}
+	id := c.Param("id")
+
+	result := handler.db.Delete(&book, id)
+
+	if result.Error != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
+	}
+
+	if result.RowsAffected == 0 {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Book not found"})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Book successfully deleted"})
+}
