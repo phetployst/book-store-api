@@ -39,6 +39,7 @@ func TestRegisterRoutes(t *testing.T) {
 		{"/books", http.MethodPost},
 		{"/books", http.MethodGet},
 		{"/books/:id", http.MethodGet},
+		{"/books/:id", http.MethodPut},
 	}
 
 	sort.Slice(got, func(i, j int) bool {
