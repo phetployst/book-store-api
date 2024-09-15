@@ -101,3 +101,37 @@ func (handler *handler) GetById(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, book)
 }
+
+func (handler *handler) Update(c echo.Context) error {
+	book := Book{}
+	id := c.Param("id")
+
+	validator := validator.New()
+	validator.RegisterValidation("isbn", validateISBN)
+
+	c.Echo().Validator = &CustomValidator{validator: validator}
+	logger := middleware.GetLogger(c)
+
+	if err := handler.db.First(&book, id).Error; err != nil {
+		logger.Error("book not found", zap.String("id", id), zap.Error(err))
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Book not found"})
+	}
+
+	if err := c.Bind(&book); err != nil {
+		logger.Error("failed to bind book", zap.String("id", id), zap.Error(err))
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Failed to bind book data"})
+	}
+
+	if err := c.Validate(book); err != nil {
+		logger.Error("failed to validate book", zap.Any("book", book), zap.Error(err))
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Validation failed"})
+	}
+
+	if result := handler.db.Save(&book); result.Error != nil {
+		logger.Error("failed to update book", zap.Any("book", book), zap.Error(result.Error))
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update book"})
+	}
+
+	logger.Info("book updated successfully", zap.Any("book", book))
+	return c.JSON(http.StatusOK, book)
+}

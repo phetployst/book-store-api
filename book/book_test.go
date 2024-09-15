@@ -18,6 +18,7 @@ const (
 	createBookQuery  = `INSERT INTO "books" ("created_at","updated_at","deleted_at","title","author","isbn") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "id"`
 	getAllBookQuery  = `SELECT * FROM "books" WHERE "books"."deleted_at" IS NULL`
 	getBookByIdQuery = `SELECT * FROM "books" WHERE "books"."id" = $1 AND "books"."deleted_at" IS NULL ORDER BY "books"."id" LIMIT $2`
+	updateBookQuery  = `UPDATE "books" SET "created_at"=$1,"updated_at"=$2,"deleted_at"=$3,"title"=$4,"author"=$5,"isbn"=$6 WHERE "books"."deleted_at" IS NULL AND "id" = $7`
 )
 
 func TestCreateBook(t *testing.T) {
@@ -206,7 +207,7 @@ func TestGetBookById(t *testing.T) {
 		assert.Equal(t, http.StatusOK, response.Code)
 	})
 
-	t.Run("get user by id given user does not exist", func(t *testing.T) {
+	t.Run("get book by id given book does not exist", func(t *testing.T) {
 		e := echo.New()
 		defer e.Close()
 		request := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -230,7 +231,7 @@ func TestGetBookById(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, response.Code)
 	})
 
-	t.Run("get user by id given error during query", func(t *testing.T) {
+	t.Run("get book by id given error during query", func(t *testing.T) {
 		e := echo.New()
 		defer e.Close()
 		request := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -249,6 +250,142 @@ func TestGetBookById(t *testing.T) {
 
 		handler := NewHandler(gormDB)
 		err := handler.GetById(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, response.Code)
+	})
+
+}
+
+func TestUpdateBook(t *testing.T) {
+	t.Run("update book successful", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+
+		body := `{"title": "The Tree of a Thousand Loves", "author": "Sukanya Kittikhun"}`
+		request := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
+		request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("29")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		row := sqlmock.NewRows([]string{"ID", "CreatedAt", "UpdatedAt", "DeletedAt", "title", "author", "isbn"})
+		row.AddRow(1, nil, nil, nil, "The Tree of Loves", "Phetploy", "9786164453819")
+		mock.ExpectQuery(getBookByIdQuery).
+			WithArgs("29", 1).
+			WillReturnRows(row)
+
+		mock.ExpectBegin()
+		mock.ExpectExec(updateBookQuery).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "The Tree of a Thousand Loves", "Sukanya Kittikhun", "9786164453819", 1).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+		mock.ExpectCommit()
+
+		handler := NewHandler(gormDB)
+		err := handler.Update(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, response.Code)
+	})
+
+	t.Run("update book given book does not exist", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+
+		body := `{"title": "The Great Gatsby", "author": "F. Scott Fitzgerald", "isbn": "9780743273565"}`
+		request := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
+		request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("12")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		mock.ExpectQuery(getBookByIdQuery).
+			WithArgs("12", 1).
+			WillReturnError(gorm.ErrRecordNotFound)
+
+		handler := NewHandler(gormDB)
+		err := handler.Update(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNotFound, response.Code)
+	})
+
+	t.Run("update book given invalid input ISBN", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+
+		body := `{"isbn": "00"}`
+		request := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
+		request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("18")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		row := sqlmock.NewRows([]string{"ID", "CreatedAt", "UpdatedAt", "DeletedAt", "title", "author", "isbn"})
+		row.AddRow(18, nil, nil, nil, "1984", "George Orwell", "9780451524935")
+		mock.ExpectQuery(getBookByIdQuery).
+			WithArgs("18", 1).
+			WillReturnRows(row)
+
+		handler := NewHandler(gormDB)
+		err := handler.Update(c)
+
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusBadRequest, response.Code)
+	})
+
+	t.Run("update book given error during query execution", func(t *testing.T) {
+		e := echo.New()
+		defer e.Close()
+
+		body := `{"author": "J.D. Salinger"}`
+		request := httptest.NewRequest(http.MethodPut, "/", strings.NewReader(body))
+		request.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		response := httptest.NewRecorder()
+		c := e.NewContext(request, response)
+		c.SetPath("/books/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("29")
+
+		db, mock, _ := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+		defer db.Close()
+
+		gormDB, _ := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+
+		row := sqlmock.NewRows([]string{"ID", "CreatedAt", "UpdatedAt", "DeletedAt", "title", "author", "isbn"})
+		row.AddRow(29, nil, nil, nil, "The Catcher in the Rye", "J.D. Saling", "9780316769488")
+		mock.ExpectQuery(getBookByIdQuery).
+			WithArgs("29", 1).
+			WillReturnRows(row)
+
+		mock.ExpectExec(updateBookQuery).
+			WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), "The Tree of Loves", "Phetploy", "0781101875322", 1).
+			WillReturnError(errors.New("query error"))
+		mock.ExpectRollback()
+
+		handler := NewHandler(gormDB)
+		err := handler.Update(c)
 
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusInternalServerError, response.Code)
