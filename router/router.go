@@ -13,4 +13,5 @@ func RegisterRoutes(e *echo.Echo, db *gorm.DB) {
 	e.GET("/books", bookHandler.GetAll)
 	e.GET("/books/:id", bookHandler.GetById)
 	e.PUT("/books/:id", bookHandler.Update)
+	e.DELETE("/books/:id", bookHandler.Delete)
 }
