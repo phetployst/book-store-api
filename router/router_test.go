@@ -38,6 +38,7 @@ func TestRegisterRoutes(t *testing.T) {
 	want := []Route{
 		{"/books", http.MethodPost},
 		{"/books", http.MethodGet},
+		{"/books/:id", http.MethodGet},
 	}
 
 	sort.Slice(got, func(i, j int) bool {
