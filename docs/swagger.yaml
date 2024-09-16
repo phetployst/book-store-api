@@ -1,0 +1,201 @@
+basePath: /
+definitions:
+  book.Book:
+    properties:
+      author:
+        type: string
+      isbn:
+        type: string
+      title:
+        type: string
+    required:
+    - author
+    - isbn
+    - title
+    type: object
+host: localhost:1323
+info:
+  contact:
+    email: st.phetploy@gmail.com
+    name: API Support Team
+  description: This is a RESTful API for managing books in a book store. It supports
+    CRUD operations such as creating, retrieving, updating, and deleting books.
+  title: Book Store API
+  version: "1.0"
+paths:
+  /books:
+    get:
+      consumes:
+      - application/json
+      description: Fetch a list of all books from the database. This endpoint retrieves
+        the complete list of books without any filters.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of books
+          schema:
+            items:
+              $ref: '#/definitions/book.Book'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get all books
+      tags:
+      - books
+    post:
+      consumes:
+      - application/json
+      description: Creates a new book and stores it in the database. The book object
+        must pass validation before being saved.
+      parameters:
+      - description: New book object
+        in: body
+        name: book
+        required: true
+        schema:
+          $ref: '#/definitions/book.Book'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created book
+          schema:
+            $ref: '#/definitions/book.Book'
+        "400":
+          description: Validation failed or failed to bind data
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Add a new book
+      tags:
+      - books
+  /books/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a book by its unique ID. If the book is not found, it returns
+        a 404 error. Otherwise, it returns a success message.
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book successfully deleted
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Book not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Delete a book by its ID
+      tags:
+      - books
+    get:
+      consumes:
+      - application/json
+      description: Fetches details of a specific book by its unique ID. If the book
+        is not found, it returns a 404 error.
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Book details
+          schema:
+            $ref: '#/definitions/book.Book'
+        "404":
+          description: Book not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Retrieve a book by its ID
+      tags:
+      - books
+    put:
+      consumes:
+      - application/json
+      description: Updates the details of an existing book. The book must exist, and
+        the request body should pass validation checks.
+      parameters:
+      - description: Book ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated book object
+        in: body
+        name: book
+        required: true
+        schema:
+          $ref: '#/definitions/book.Book'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated book details
+          schema:
+            $ref: '#/definitions/book.Book'
+        "400":
+          description: Validation failed or failed to bind data
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Book not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Update an existing book
+      tags:
+      - books
+schemes:
+- http
+- https
+swagger: "2.0"
