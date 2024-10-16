@@ -1,56 +1,25 @@
 # 📚 Book Store API
 
-An API for managing a bookstore, built with Go and the Echo framework. This project allows users to browse, create, update, and delete book records, while providing efficient handling of ISBN validation and error handling.
+An API for managing a bookstore, built with Go and the Echo framework. This project allows users to browse, create, update, and delete book records.
 
 This project is based on the [example-go-api](https://github.com/raksit31667/example-go-api) repository. Many concepts and structures were adapted and built upon from this source.
 
-## 📝 Features
-
-- Add, update, and delete books
-- ISBN-10 and ISBN-13 validation
-- Middleware for logging with request tracing (parent & span IDs)
-- Error handling and proper logging
-- Mock testing and CI/CD integration
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- **Go** (version 1.22.1)
-- **Docker** (optional, for containerization)
-- **PostgreSQL** (or any other database of your choice)
-
-### Installation
-
-1. Clone the repository:
-
-    ```bash
-    git clone https://github.com/phetployst/book-store-api.git
-    ```
-
-2. Navigate into the project directory:
-
-    ```bash
-    cd book-store-api
-    ```
-
-3. Install dependencies:
-
-    ```bash
-    go mod tidy
-    ```
-
-### Database Setup
-
-Make sure you have PostgreSQL installed and running. Set the following environment variables with your database credentials:
+## 📦️ Packages
 
 ```bash
-export HOSTNAME=localhost
-export PORT=1323
-export DB_CONNECTION_STRING=postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable
+go get github.com/DATA-DOG/go-sqlmock
+go get github.com/go-playground/validator/v10
+go get github.com/google/uuid
+go get github.com/labstack/echo/v4
+go get github.com/stretchr/testify
+go get github.com/swaggo/echo-swagger
+go get github.com/swaggo/swag
+go get go.uber.org/zap
+go get gorm.io/driver/postgres
+go get gorm.io/gorm
 ```
 
-### Running the Application
+## 🚀 Running the Application
 1. To start the application locally:
 
 ```bash
@@ -88,13 +57,3 @@ Content-Type: application/json
     "isbn": "9780132350884",
 }
 ```
-
-## 🛠️ Technologies
-- Go: Backend language
-- Echo: Web framework
-- PostgreSQL: Database
-- Docker: Containerization
-- GitHub Actions: CI/CD
-
-## 🤝 Contributing
-Feel free to submit issues or pull requests! Contributions are always welcome.
