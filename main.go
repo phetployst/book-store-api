@@ -21,17 +21,6 @@ import (
 	"gorm.io/gorm"
 )
 
-// @title Book Store API
-// @version 1.0
-// @description This is a RESTful API for managing books in a book store. It supports CRUD operations such as creating, retrieving, updating, and deleting books.
-
-// @contact.name API Support Team
-// @contact.email st.phetploy@gmail.com
-
-// @host localhost:1323
-// @BasePath /
-
-// @schemes http https
 func main() {
 	logger, err := zap.NewProduction()
 	if err != nil {

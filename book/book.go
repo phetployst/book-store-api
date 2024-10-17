@@ -44,17 +44,6 @@ func NewHandler(db *gorm.DB) *handler {
 	return &handler{db: db}
 }
 
-// Create godoc
-// @Summary Add a new book
-// @Description Creates a new book and stores it in the database. The book object must pass validation before being saved.
-// @Tags books
-// @Accept  json
-// @Produce  json
-// @Param book body Book true "New book object"
-// @Success 201 {object} Book "Created book"
-// @Failure 400 {object} map[string]string "Validation failed or failed to bind data"
-// @Failure 500 {object} map[string]string "Internal Server Error"
-// @Router /books [post]
 func (handler *handler) Create(c echo.Context) error {
 	book := Book{}
 
@@ -84,15 +73,6 @@ func (handler *handler) Create(c echo.Context) error {
 
 }
 
-// GetAll godoc
-// @Summary Get all books
-// @Description Fetch a list of all books from the database. This endpoint retrieves the complete list of books without any filters.
-// @Tags books
-// @Accept  json
-// @Produce  json
-// @Success 200 {array} Book "List of books"
-// @Failure 500 {object} map[string]string "Internal Server Error"
-// @Router /books [get]
 func (handler *handler) GetAll(c echo.Context) error {
 	var books []Book
 	if result := handler.db.Find(&books); result.Error != nil {
@@ -103,17 +83,6 @@ func (handler *handler) GetAll(c echo.Context) error {
 
 }
 
-// GetById godoc
-// @Summary Retrieve a book by its ID
-// @Description Fetches details of a specific book by its unique ID. If the book is not found, it returns a 404 error.
-// @Tags books
-// @Accept  json
-// @Produce  json
-// @Param id path int true "Book ID"
-// @Success 200 {object} Book "Book details"
-// @Failure 404 {object} map[string]string "Book not found"
-// @Failure 500 {object} map[string]string "Internal Server Error"
-// @Router /books/{id} [get]
 func (handler *handler) GetById(c echo.Context) error {
 	book := Book{}
 	id := c.Param("id")
@@ -133,19 +102,6 @@ func (handler *handler) GetById(c echo.Context) error {
 	return c.JSON(http.StatusOK, book)
 }
 
-// Update godoc
-// @Summary Update an existing book
-// @Description Updates the details of an existing book. The book must exist, and the request body should pass validation checks.
-// @Tags books
-// @Accept  json
-// @Produce  json
-// @Param id path int true "Book ID"
-// @Param book body Book true "Updated book object"
-// @Success 200 {object} Book "Updated book details"
-// @Failure 400 {object} map[string]string "Validation failed or failed to bind data"
-// @Failure 404 {object} map[string]string "Book not found"
-// @Failure 500 {object} map[string]string "Internal Server Error"
-// @Router /books/{id} [put]
 func (handler *handler) Update(c echo.Context) error {
 	book := Book{}
 	id := c.Param("id")
@@ -180,17 +136,6 @@ func (handler *handler) Update(c echo.Context) error {
 	return c.JSON(http.StatusOK, book)
 }
 
-// Delete godoc
-// @Summary Delete a book by its ID
-// @Description Deletes a book by its unique ID. If the book is not found, it returns a 404 error. Otherwise, it returns a success message.
-// @Tags books
-// @Accept  json
-// @Produce  json
-// @Param id path int true "Book ID"
-// @Success 200 {object} map[string]string "Book successfully deleted"
-// @Failure 404 {object} map[string]string "Book not found"
-// @Failure 500 {object} map[string]string "Internal Server Error"
-// @Router /books/{id} [delete]
 func (handler *handler) Delete(c echo.Context) error {
 	book := Book{}
 	id := c.Param("id")
