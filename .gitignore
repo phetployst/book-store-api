@@ -31,3 +31,6 @@ go.work
 
 # IDE files
 .idea
+
+# API documentation file (not needed for version control)
+API_DOCUMENTATION.md
